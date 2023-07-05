@@ -4,8 +4,13 @@
   "description": "Chainable DOM API",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "npx esbuild index.ts --outfile=dist/index.js",
+    "size": "npx esbuild index.ts --bundle --minify | gzip -c | wc -c"
   },
   "author": "Vladimir Klepov v.klepov@gmail.com",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "^0.18.11",
+    "typescript": "^4.9.5"
+  }
 }
