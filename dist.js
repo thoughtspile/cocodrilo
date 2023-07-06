@@ -12,7 +12,6 @@
     });
     while (target.firstChild !== first)
       target.removeChild(target.firstChild);
-    return target;
   }
   function updateEvents(node, events) {
     const cache = node.events || (node.events = {});
@@ -28,7 +27,9 @@
         updateEvents(node, newValue);
       } else if (key === "style") {
         Object.assign(node[key], newValue);
-      } else if (key === "$key" || key !== "list" && key !== "form" && key in node) {
+      } else if (key === "$key") {
+        node.setAttribute("data-key", newValue);
+      } else if (key !== "list" && key !== "form" && key in node) {
         node[key] = newValue;
       } else if (typeof newValue === "string") {
         node.setAttribute(key, newValue);
@@ -36,14 +37,14 @@
         node.removeAttribute(key);
       }
     });
-    return node;
   }
   function el(tag, props = {}, children = []) {
     function build(parent) {
-      const match = props.$key && parent.querySelector(`${tag}[data-key]=${props.$key}`);
+      const match = props.$key && parent.querySelector(`${tag}[data-key="${props.$key}"]`);
       const node = match || document.createElement(tag, { is: props.is });
       build["current"] = node;
-      return setChildren(assign(node, props), children);
+      up(node, props, children);
+      return node;
     }
     return build;
   }
@@ -51,7 +52,9 @@
     assign(node, props);
     children && setChildren(node, children);
   }
-  var text = (text2) => document.createTextNode(text2);
+  function text(text2) {
+    return document.createTextNode(text2);
+  }
 
   // todo.ts
   var STORAGE_KEY = "todos-redom";
@@ -63,15 +66,17 @@
   var Todo = (props) => {
     const item = el("li", {
       className: "todo",
+      $key: props.item.title,
       on: {
-        dblclick: () => item.withClass("editing")
+        dblclick: () => item.current.classList.add("editing")
       }
     }, [
-      el("div", { className: "view" }, [
+      el("div", { className: "view", $key: "view" }, [
         el("input", {
           className: "toggle",
           type: "checkbox",
           checked: props.item.done,
+          $key: "toggle",
           on: {
             change: (e) => props.onChange({ ...props.item, done: e.currentTarget.checked })
           }
@@ -81,12 +86,14 @@
         ]),
         el("button", {
           className: "destroy",
+          $key: "destroy",
           on: {
             click: () => props.remove()
           }
         })
       ]),
       el("form", {
+        $key: "form",
         on: {
           submit: (e) => {
             e.preventDefault();
@@ -97,6 +104,7 @@
         }
       }, [
         el("input", {
+          $key: "edit",
           class: "edit",
           type: "text",
           name: "title"

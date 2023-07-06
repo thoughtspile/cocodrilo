@@ -28,7 +28,7 @@ function assign<T extends Element>(node: T, props: Props<T>) {
     } else if (key === 'style') {
       Object.assign(node[key], newValue);
     } else if (key === '$key') {
-      node.setAttribute(key, newValue as any);
+      node.setAttribute('data-key', newValue as any);
     } else if (key !== "list" && key !== "form" && key in node) {
       node[key] = newValue;
     } else if (typeof newValue === 'string') {
@@ -47,7 +47,7 @@ export function el<K extends keyof HTMLElementTagNameMap>(
 export function el<T extends Element>(tagName: string, props?: Props<T>, children?: Children): Builder<T>;
 export function el<T extends Element>(tag: string, props: Props<T> = {}, children: Children = []) {
   function build(parent: Element) {
-    const match = props.$key && parent.querySelector(`${tag}[data-key]=${props.$key}`);
+    const match = props.$key && parent.querySelector(`${tag}[data-key="${props.$key}"]`);
     const node = (match || document.createElement(tag, { is: props.is })) as T;
     build['current'] = node;
     up(node, props, children);

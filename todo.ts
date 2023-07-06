@@ -16,15 +16,17 @@ interface TodoProps {
 const Todo = (props: TodoProps) => {
   const item = el('li', { 
     className: 'todo',
+    $key: props.item.title,
     on: {
-      dblclick: () => item.withClass('editing'),
+      dblclick: () => item.current.classList.add('editing'),
     }
   }, [
-    el('div', { className: 'view' }, [
+    el('div', { className: 'view', $key: 'view' }, [
       el('input', {
         className: 'toggle',
         type: 'checkbox',
         checked: props.item.done,
+        $key: 'toggle',
         on: {
           change: (e) => props.onChange({ ...props.item, done: e.currentTarget.checked }),
         }
@@ -34,12 +36,14 @@ const Todo = (props: TodoProps) => {
       ]),
       el('button', {
         className: 'destroy',
+        $key: 'destroy',
         on: {
           click: () => props.remove()
         },
       }),
     ]),
     el('form', {
+      $key: 'form',
       on: {
         submit: (e) => {
           e.preventDefault();
@@ -50,6 +54,7 @@ const Todo = (props: TodoProps) => {
       }
     }, [
       el('input', {
+        $key: 'edit',
         class: 'edit',
         type: 'text',
         name: 'title',
