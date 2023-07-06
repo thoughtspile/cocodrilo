@@ -14,39 +14,48 @@ interface TodoProps {
   remove: () => void;
 }
 const Todo = (props: TodoProps) => {
-  const item = el('li', { className: 'todo' }, [
+  const item = el('li', { 
+    className: 'todo',
+    on: {
+      dblclick: () => item.withClass('editing'),
+    }
+  }, [
     el('div', { className: 'view' }, [
       el('input', {
         className: 'toggle',
         type: 'checkbox',
-        checked: props.item.done
-      }).on({
-        change: (e) => props.onChange({ ...props.item, done: e.currentTarget.checked }),
+        checked: props.item.done,
+        on: {
+          change: (e) => props.onChange({ ...props.item, done: e.currentTarget.checked }),
+        }
       }),
       el('label', {}, [
         props.item.title
       ]),
-      el('button', { className: 'destroy' }).on({
-        click: () => props.remove()
+      el('button', {
+        className: 'destroy',
+        on: {
+          click: () => props.remove()
+        },
       }),
     ]),
-    el('form', {}, [
+    el('form', {
+      on: {
+        submit: (e) => {
+          e.preventDefault();
+          const title = new FormData(e.currentTarget).get('title') as string;
+          props.onChange({ ...props.item, title });
+          item.classList.remove('editing');
+        }
+      }
+    }, [
       el('input', {
         class: 'edit',
         type: 'text',
         name: 'title',
       })
-    ]).on({
-      submit: (e) => {
-        e.preventDefault();
-        const title = new FormData(e.currentTarget).get('title') as string;
-        props.onChange({ ...props.item, title });
-        item.classList.remove('editing');
-      }
-    })
-  ]).on({
-    dblclick: () => item.withClass('editing'),
-  });
+    ])
+  ]);
   return item;
 }
 
@@ -90,11 +99,12 @@ const TodoApp = (node: HTMLElement) => {
       el('input', {
         type: 'radio',
         value,
-        name: 'filter'
-      }).on({
-        click: () => {
-          filter = filters[value];
-          update();
+        name: 'filter',
+        on: {
+          click: () => {
+            filter = filters[value];
+            update();
+          }
         }
       }),
       label
@@ -118,10 +128,11 @@ const TodoApp = (node: HTMLElement) => {
         el('input', {
           class: 'toggle-all',
           type: 'checkbox',
-        }).on({
-          click: () => {
-            const allDone = data.every(d => d[0].done);
-            data.forEach(d => d[0].done = !allDone);
+          on: {
+            click: () => {
+              const allDone = data.every(d => d[0].done);
+              data.forEach(d => d[0].done = !allDone);
+            }
           }
         }),
         el('label', {
@@ -139,14 +150,17 @@ const TodoApp = (node: HTMLElement) => {
           Filter('Active', 'active'),
           Filter('Completed', 'completed'),
         ]),
-        el('button', { className: 'clear-completed' }, [
-          'Clear Completed'
-        ]).on({
-          click: () => {
-            data = data.filter((d) => !d[0].done);
-            update();
+        el('button', { 
+          className: 'clear-completed',
+          on: {
+            click: () => {
+              data = data.filter((d) => !d[0].done);
+              update();
+            }
           }
-        }),
+        }, [
+          'Clear Completed'
+        ]),
       ])
     ]),
     el('footer', { className: 'info' }, [

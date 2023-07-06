@@ -1,4 +1,4 @@
-import { BulkHelpers, Children, ElementChain } from "./types";
+import { Children, ElementChain, EventMap, Props } from "./types";
 
 function setChildren<T extends HTMLElement>(
   target: T, 
@@ -9,36 +9,32 @@ function setChildren<T extends HTMLElement>(
   return target as ElementChain<T>;
 }
 
-function assign<T extends HTMLElement>(
-  target: T, 
-  attributes: Partial<T> & Record<string, unknown>
-): T {
-  Object.entries(attributes).forEach(([a, v]) => {
-    if (a === 'style') Object.assign(target[a], v);
-    else if (a in target) target[a] = v;
-    else typeof v === 'string' ? target.setAttribute(a, v) : target.removeAttribute(a)
+function updateEvents(node: HTMLElement & { events?: EventMap }, events: EventMap) {
+  const cache = node.events || (node.events = {});
+  Object.entries(events).forEach(([event, listener]) => {
+    cache[event] && node.removeEventListener(event, cache[event]);
+    (cache[event] = listener) && node.addEventListener(event, listener);
   });
-  return target;
 }
 
-function patch<T extends HTMLElement>(target: T): ElementChain<T> {
-  return Object.assign(target, {
-    withClass: (...classes) => {
-      classes.forEach(c => {
-        if (typeof c === 'string') target.classList.toggle(c, true);
-        else Object.entries(c).forEach(([cls, val]) => target.classList.toggle(cls, !!val));
-      });
-      return target as ElementChain<T>;
-    },
-    on: (events, options) => {
-      Object.entries(events).forEach(([e, h]) => target.addEventListener(e, h, options));
-      if (options && options.stop) options.stop(e => target.removeEventListener(e, events[e], options));
-      return target as ElementChain<T>;
-    },
-  } as BulkHelpers<T>);
+function assign<T extends HTMLElement>(node: T, props: Props<T>): T {
+  Object.entries(props).forEach(([key, newValue]) => {
+    if (key === "key") {
+    } else if (key === "on") {
+      updateEvents(node, newValue as any);
+    } else if (key === 'style') {
+      Object.assign(node[key], newValue);
+    } else if (key !== "list" && key !== "form" && key in node) {
+      node[key] = newValue;
+    } else if (typeof newValue === 'string') {
+      node.setAttribute(key, newValue);
+    } else {
+      node.removeAttribute(key);
+    }
+  });
+  return node;
 }
 
-type Props<E extends HTMLElement = HTMLElement> = ElementCreationOptions & Partial<E> & Record<string, unknown>;
 export function el<K extends keyof HTMLElementTagNameMap>(
   tagName: K, 
   props?: Props<HTMLElementTagNameMap[K]>,
@@ -55,8 +51,8 @@ export function el<T extends HTMLElement>(
   children?: Children
 ): ElementChain<T>;
 export function el<T extends HTMLElement>(tag: any, props: Props<T> = {}, children: Children = []) {
-  const node = tag instanceof HTMLElement ? tag : document.createElement(tag, 'is' in props ? props : undefined) as HTMLElement;
-  return setChildren(assign(patch(node), props), children);
+  const node = (tag instanceof HTMLElement ? tag : document.createElement(tag, 'is' in props ? props : undefined)) as T;
+  return setChildren(assign(node, props), children);
 }
 
 export const text = (text: string) => document.createTextNode(text);
