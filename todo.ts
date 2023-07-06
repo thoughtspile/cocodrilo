@@ -49,13 +49,13 @@ const Todo = (props: TodoProps) => {
           e.preventDefault();
           const title = new FormData(e.currentTarget).get('title') as string;
           props.onChange({ ...props.item, title });
-          item.classList.remove('editing');
+          item.current.classList.remove('editing');
         }
       }
     }, [
       el('input', {
         $key: 'edit',
-        class: 'edit',
+        className: 'edit',
         type: 'text',
         name: 'title',
       })
@@ -66,33 +66,42 @@ const Todo = (props: TodoProps) => {
 
 const filters = {
   all: (e: TodoItem) => true,
-  active: (e: TodoItem) => e.done,
-  completed: (e: TodoItem) => !e.done,
+  active: (e: TodoItem) => !e.done,
+  completed: (e: TodoItem) => e.done,
 };
 
 type TodoItem = { done: boolean; title: string };
 const TodoApp = () => {
   let filter = filters.all;
-  let data: [TodoItem, ReturnType<typeof Todo>][] = [];
+  let data: TodoItem[] = [];
   const update = () => {
     todoStorage.save(data);
-    const visible = data.filter(([props]) => filter(props));
+    const visible = data.filter(filter);
     up(counter.current, {}, [String(visible.length)]);
-    up(todoList.current, {}, visible.map(v => v[1]));
+    up(todoList.current, {}, visible.map(item => {
+      return Todo({ item, remove: () => removeItem(item), onChange: v => Object.assign(item, v) });
+    }));
+  };
+  const removeItem = (item: TodoItem) => {
+    data = data.filter(d => d !== item);
+    update();
   };
   const addItem = (item: TodoItem) => {
-    const remove = () => {
-      data = data.filter(d => d[0] !== item);
-      update();
-    };
-    const cmp = Todo({ item, remove, onChange: v => Object.assign(item, v) });
-    data.push([item, cmp]);
-    createInput.current.value = '';
+    data.push(item);
+    update();
+  };
+  const toggleAll = () => {
+    const allDone = data.every(d => d.done);
+    data.forEach(d => d.done = !allDone);
+    update();
+  };
+  const clearCompleted = () => {
+    data = data.filter((d) => !d.done);
     update();
   };
 
   const createInput = el('input', {
-    class: 'new-todo',
+    className: 'new-todo',
     type: 'text',
     placeholder: 'What needs to be done?',
   });
@@ -124,7 +133,9 @@ const TodoApp = () => {
           on: {
             submit: (evt) => {
               evt.preventDefault();
-              addItem({ done: false, title: createInput.current.value });
+              const item = { done: false, title: createInput.current.value };
+              createInput.current.value = '';
+              addItem(item);
             }
           }
         }, [
@@ -133,13 +144,10 @@ const TodoApp = () => {
       ]),
       el('section', { className: 'main' }, [
         el('input', {
-          class: 'toggle-all',
+          className: 'toggle-all',
           type: 'checkbox',
           on: {
-            click: () => {
-              const allDone = data.every(d => d[0].done);
-              data.forEach(d => d[0].done = !allDone);
-            }
+            click: toggleAll
           }
         }),
         el('label', {
@@ -160,10 +168,7 @@ const TodoApp = () => {
         el('button', { 
           className: 'clear-completed',
           on: {
-            click: () => {
-              data = data.filter((d) => !d[0].done);
-              update();
-            }
+            click: clearCompleted
           }
         }, [
           'Clear Completed'
