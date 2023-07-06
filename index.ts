@@ -1,12 +1,19 @@
-import { Children, ElementChain, EventMap, Props } from "./types";
+import { Children, Builder, EventMap, Props } from "./types";
 
 function setChildren<T extends HTMLElement>(
   target: T, 
-  childList: Children
+  childList: Children,
 ): T {
-  target.childNodes.forEach(c => c.remove());
-  childList.forEach(c => c && target.appendChild(c instanceof Node ? c : text(c)));
-  return target as ElementChain<T>;
+  let first: Node | null = null;
+  childList.forEach((c) => {
+    const child = typeof c === 'function' ? c(target) : c;
+    if (!child) return;
+    const node = child instanceof Node ? child : text(child);
+    target.appendChild(node);
+    !first && (first = node);
+  });
+  while (target.firstChild !== first) target.removeChild(target.firstChild);
+  return target;
 }
 
 function updateEvents(node: HTMLElement & { events?: EventMap }, events: EventMap) {
@@ -24,7 +31,7 @@ function assign<T extends HTMLElement>(node: T, props: Props<T>): T {
       updateEvents(node, newValue as any);
     } else if (key === 'style') {
       Object.assign(node[key], newValue);
-    } else if (key !== "list" && key !== "form" && key in node) {
+    } else if (key === '$key' || (key !== "list" && key !== "form" && key in node)) {
       node[key] = newValue;
     } else if (typeof newValue === 'string') {
       node.setAttribute(key, newValue);
@@ -39,20 +46,25 @@ export function el<K extends keyof HTMLElementTagNameMap>(
   tagName: K, 
   props?: Props<HTMLElementTagNameMap[K]>,
   children?: Children
-): ElementChain<HTMLElementTagNameMap[K]>;
+): Builder<HTMLElementTagNameMap[K]>;
 export function el<T extends HTMLElement>(
   tagName: string, 
   props?: Props<T>,
   children?: Children
-): ElementChain<T>;
-export function el<T extends HTMLElement>(
-  node: HTMLElement,
-  props?: Props<T>,
-  children?: Children
-): ElementChain<T>;
-export function el<T extends HTMLElement>(tag: any, props: Props<T> = {}, children: Children = []) {
-  const node = (tag instanceof HTMLElement ? tag : document.createElement(tag, 'is' in props ? props : undefined)) as T;
-  return setChildren(assign(node, props), children);
+): Builder<T>;
+export function el<T extends HTMLElement>(tag: string, props: Props<T> = {}, children: Children = []) {
+  function build(parent: Element) {
+    const match = props.$key && parent.querySelector(`${tag}[data-key]=${props.$key}`);
+    const node = (match || document.createElement(tag, { is: props.is })) as T;
+    build['current'] = node;
+    return setChildren(assign(node, props), children);
+  }
+  return build;
+}
+
+export function up<T extends HTMLElement>(node: T, props: Props<T> = {}, children?: Children): void {
+  assign(node, props);
+  children && setChildren(node, children);
 }
 
 export const text = (text: string) => document.createTextNode(text);

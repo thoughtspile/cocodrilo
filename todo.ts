@@ -1,10 +1,10 @@
-import { el } from '.';
+import { el, up } from '.';
 
 const STORAGE_KEY = 'todos-redom';
 const todoStorage = {
   fetch: () => JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'),
   save: (todos) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+    // localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
   },
 };
 
@@ -66,14 +66,14 @@ const filters = {
 };
 
 type TodoItem = { done: boolean; title: string };
-const TodoApp = (node: HTMLElement) => {
+const TodoApp = () => {
   let filter = filters.all;
   let data: [TodoItem, ReturnType<typeof Todo>][] = [];
   const update = () => {
     todoStorage.save(data);
     const visible = data.filter(([props]) => filter(props));
-    el(counter, {}, [String(visible.length)]);
-    el(todoList, {}, visible.map(v => v[1]));
+    up(counter.current, {}, [String(visible.length)]);
+    up(todoList.current, {}, visible.map(v => v[1]));
   };
   const addItem = (item: TodoItem) => {
     const remove = () => {
@@ -82,7 +82,7 @@ const TodoApp = (node: HTMLElement) => {
     };
     const cmp = Todo({ item, remove, onChange: v => Object.assign(item, v) });
     data.push([item, cmp]);
-    createInput.value = '';
+    createInput.current.value = '';
     update();
   };
 
@@ -111,18 +111,20 @@ const TodoApp = (node: HTMLElement) => {
     ])
   ]);
 
-  return el(node, {}, [
+  return [
     el('section', { className: 'todoapp' }, [
       el('header', { className: 'header' }, [
         el('h1', { className: 'heading' }, ['todos']),
-        el('form', {}, [
-          createInput,
-        ]).on({
-          submit: (evt) => {
-            evt.preventDefault();
-            addItem({ done: false, title: createInput.value });
+        el('form', {
+          on: {
+            submit: (evt) => {
+              evt.preventDefault();
+              addItem({ done: false, title: createInput.current.value });
+            }
           }
-        }),
+        }, [
+          createInput,
+        ]),
       ]),
       el('section', { className: 'main' }, [
         el('input', {
@@ -178,7 +180,7 @@ const TodoApp = (node: HTMLElement) => {
         }, ['TodoMVC'])
       ]),
     ])
-  ]);
+  ];
 };
 
-TodoApp(document.body);
+up(document.body, {}, TodoApp());
