@@ -1,6 +1,6 @@
 import { Children, Builder, EventMap, Props } from "./types";
 
-function setChildren<T extends HTMLElement>(
+function setChildren<T extends Element>(
   target: T, 
   childList: Children,
 ): T {
@@ -16,7 +16,7 @@ function setChildren<T extends HTMLElement>(
   return target;
 }
 
-function updateEvents(node: HTMLElement & { events?: EventMap }, events: EventMap) {
+function updateEvents(node: Element & { events?: EventMap }, events: EventMap) {
   const cache = node.events || (node.events = {});
   Object.entries(events).forEach(([event, listener]) => {
     cache[event] && node.removeEventListener(event, cache[event]);
@@ -24,14 +24,16 @@ function updateEvents(node: HTMLElement & { events?: EventMap }, events: EventMa
   });
 }
 
-function assign<T extends HTMLElement>(node: T, props: Props<T>): T {
+function assign<T extends Element>(node: T, props: Props<T>): T {
   Object.entries(props).forEach(([key, newValue]) => {
     if (key === "key") {
     } else if (key === "on") {
       updateEvents(node, newValue as any);
     } else if (key === 'style') {
       Object.assign(node[key], newValue);
-    } else if (key === '$key' || (key !== "list" && key !== "form" && key in node)) {
+    } else if (key === '$key') {
+      node.setAttribute(key, newValue as any);
+    } else if (key !== "list" && key !== "form" && key in node) {
       node[key] = newValue;
     } else if (typeof newValue === 'string') {
       node.setAttribute(key, newValue);
@@ -47,12 +49,8 @@ export function el<K extends keyof HTMLElementTagNameMap>(
   props?: Props<HTMLElementTagNameMap[K]>,
   children?: Children
 ): Builder<HTMLElementTagNameMap[K]>;
-export function el<T extends HTMLElement>(
-  tagName: string, 
-  props?: Props<T>,
-  children?: Children
-): Builder<T>;
-export function el<T extends HTMLElement>(tag: string, props: Props<T> = {}, children: Children = []) {
+export function el<T extends Element>(tagName: string, props?: Props<T>, children?: Children): Builder<T>;
+export function el<T extends Element>(tag: string, props: Props<T> = {}, children: Children = []) {
   function build(parent: Element) {
     const match = props.$key && parent.querySelector(`${tag}[data-key]=${props.$key}`);
     const node = (match || document.createElement(tag, { is: props.is })) as T;
@@ -62,7 +60,7 @@ export function el<T extends HTMLElement>(tag: string, props: Props<T> = {}, chi
   return build;
 }
 
-export function up<T extends HTMLElement>(node: T, props: Props<T> = {}, children?: Children): void {
+export function up<T extends Element>(node: T, props: Props<T> = {}, children?: Children): void {
   assign(node, props);
   children && setChildren(node, children);
 }
