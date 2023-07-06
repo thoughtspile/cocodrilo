@@ -1,6 +1,10 @@
 import { Children, Builder, EventMap, Props } from "./types";
 
+var implicitKey = [0];
+var getKey = () => implicitKey[0]++;
+
 function setChildren<T extends Element>(target: T, childList: Children) {
+  implicitKey.unshift(0);
   let first: Node | null = null;
   childList.forEach((c) => {
     const child = typeof c === 'function' ? c(target) : c;
@@ -9,6 +13,7 @@ function setChildren<T extends Element>(target: T, childList: Children) {
     target.appendChild(node);
     !first && (first = node);
   });
+  implicitKey.shift();
   while (target.firstChild !== first) target.removeChild(target.firstChild);
 }
 
@@ -47,7 +52,8 @@ export function el<K extends keyof HTMLElementTagNameMap>(
 export function el<T extends Element>(tagName: string, props?: Props<T>, children?: Children): Builder<T>;
 export function el<T extends Element>(tag: string, props: Props<T> = {}, children: Children = []) {
   function build(parent: Element) {
-    const match = props.$key && parent.querySelector(`${tag}[data-key="${props.$key}"]`);
+    props.$key = props.$key || getKey();
+    const match = parent.querySelector(`${tag}[data-key="${props.$key}"]`);
     const node = (match || document.createElement(tag, { is: props.is })) as T;
     build['current'] = node;
     up(node, props, children);

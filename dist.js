@@ -1,6 +1,9 @@
 (() => {
   // index.ts
+  var implicitKey = [0];
+  var getKey = () => implicitKey[0]++;
   function setChildren(target, childList) {
+    implicitKey.unshift(0);
     let first = null;
     childList.forEach((c) => {
       const child = typeof c === "function" ? c(target) : c;
@@ -10,6 +13,7 @@
       target.appendChild(node);
       !first && (first = node);
     });
+    implicitKey.shift();
     while (target.firstChild !== first)
       target.removeChild(target.firstChild);
   }
@@ -40,7 +44,8 @@
   }
   function el(tag, props = {}, children = []) {
     function build(parent) {
-      const match = props.$key && parent.querySelector(`${tag}[data-key="${props.$key}"]`);
+      props.$key = props.$key || getKey();
+      const match = parent.querySelector(`${tag}[data-key="${props.$key}"]`);
       const node = match || document.createElement(tag, { is: props.is });
       build["current"] = node;
       up(node, props, children);
