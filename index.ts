@@ -1,9 +1,6 @@
 import { Children, Builder, EventMap, Props } from "./types";
 
-function setChildren<T extends Element>(
-  target: T, 
-  childList: Children,
-): T {
+function setChildren<T extends Element>(target: T, childList: Children) {
   let first: Node | null = null;
   childList.forEach((c) => {
     const child = typeof c === 'function' ? c(target) : c;
@@ -13,7 +10,6 @@ function setChildren<T extends Element>(
     !first && (first = node);
   });
   while (target.firstChild !== first) target.removeChild(target.firstChild);
-  return target;
 }
 
 function updateEvents(node: Element & { events?: EventMap }, events: EventMap) {
@@ -24,7 +20,7 @@ function updateEvents(node: Element & { events?: EventMap }, events: EventMap) {
   });
 }
 
-function assign<T extends Element>(node: T, props: Props<T>): T {
+function assign<T extends Element>(node: T, props: Props<T>) {
   Object.entries(props).forEach(([key, newValue]) => {
     if (key === "key") {
     } else if (key === "on") {
@@ -41,7 +37,6 @@ function assign<T extends Element>(node: T, props: Props<T>): T {
       node.removeAttribute(key);
     }
   });
-  return node;
 }
 
 export function el<K extends keyof HTMLElementTagNameMap>(
@@ -55,7 +50,8 @@ export function el<T extends Element>(tag: string, props: Props<T> = {}, childre
     const match = props.$key && parent.querySelector(`${tag}[data-key]=${props.$key}`);
     const node = (match || document.createElement(tag, { is: props.is })) as T;
     build['current'] = node;
-    return setChildren(assign(node, props), children);
+    up(node, props, children);
+    return node;
   }
   return build;
 }
@@ -65,4 +61,6 @@ export function up<T extends Element>(node: T, props: Props<T> = {}, children?: 
   children && setChildren(node, children);
 }
 
-export const text = (text: string) => document.createTextNode(text);
+export function text(text: string) {
+  return document.createTextNode(text);
+}
