@@ -17,3 +17,5 @@ export interface Builder<T extends Element = Element> {
   (parent: Element): T;
   current: T;
 }
+
+export type PatchedElement<T extends Element = Element> = T & { events?: EventMap<T> };

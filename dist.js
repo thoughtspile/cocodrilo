@@ -25,8 +25,9 @@
     });
   }
   function assign(node, props) {
+    const cache = node.props || (node.props = {});
     Object.entries(props).forEach(([key, newValue]) => {
-      if (key === "key") {
+      if (cache[key] === newValue) {
       } else if (key === "on") {
         updateEvents(node, newValue);
       } else if (key === "style") {
@@ -40,18 +41,18 @@
       } else {
         node.removeAttribute(key);
       }
+      cache[key] = newValue;
     });
   }
-  function el(tag, props = {}, children = []) {
-    function build(parent) {
+  function el(tag, props = {}, children) {
+    return function build(parent) {
       props.$key = props.$key || getKey();
       const match = parent.querySelector(`${tag}[data-key="${props.$key}"]`);
       const node = match || document.createElement(tag, { is: props.is });
       build["current"] = node;
       up(node, props, children);
       return node;
-    }
-    return build;
+    };
   }
   function up(node, props = {}, children) {
     assign(node, props);

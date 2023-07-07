@@ -14,7 +14,7 @@ interface TodoProps {
   remove: () => void;
 }
 const Todo = (props: TodoProps) => {
-  const item = el('li', { 
+  const item = el('li', {
     className: 'todo',
     $key: props.item.title,
     on: {
