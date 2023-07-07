@@ -5,11 +5,11 @@ export type EventMap<Tag extends Element = Element> = {
   [K in keyof HTMLElementEventMap]?: (this: Tag, ev: Event<K, Tag>) => any;
 }
 
-export type Children = (((parent: Element) => Node) | string | Falsy)[];
+type Child = ((parent: Element) => Node) | string | Falsy;
+export type Children = (Child | [Child, string])[];
 
 export type Props<T extends Element> = Partial<T> & Record<string, unknown> & { 
   on?: EventMap<T>;
-  $key?: unknown;
   style?: Partial<CSSStyleDeclaration>;
 };
 
@@ -18,4 +18,4 @@ export interface Builder<T extends Element = Element> {
   current: T;
 }
 
-export type PatchedElement<T extends Element = Element> = T & { events?: EventMap<T> };
+export type PatchedElement<T extends Element = Element> = T & { events?: EventMap<T>; keyed?: Record<string, Node> };

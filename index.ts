@@ -1,19 +1,22 @@
 import { Children, Builder, EventMap, Props, PatchedElement } from "./types";
 
-var implicitKey = [0];
-var getKey = () => implicitKey[0]++;
-
-function setChildren<T extends Element>(target: T, childList: Children) {
-  implicitKey.unshift(0);
+function setChildren<T extends Element>(target: PatchedElement, childList: Children) {
   let first: Node | null = null;
-  childList.forEach((c) => {
-    const child = typeof c === 'function' ? c(target) : c;
-    if (!child) return;
-    const node = child instanceof Node ? child : text(child);
-    target.appendChild(node);
-    !first && (first = node);
+  let implicitKey = 0;
+  const oldKeyed = target.keyed || {};
+  const newKeyed = (target.keyed = {});
+  childList.forEach((raw) => {
+    const isKeyed = Array.isArray(raw);
+    const c = isKeyed ? raw[0] : raw;
+    const key = isKeyed ? raw[1] : implicitKey++;
+    const child = typeof c === 'function' ? c(oldKeyed[key]) : c;
+    if (child) {
+      const node = child instanceof Node ? child : text(child);
+      newKeyed[key] = node;
+      target.appendChild(node);
+      first = first || node;
+    }
   });
-  implicitKey.shift();
   while (target.firstChild !== first) target.removeChild(target.firstChild);
 }
 
@@ -48,11 +51,8 @@ export function el<K extends keyof HTMLElementTagNameMap>(
 ): Builder<HTMLElementTagNameMap[K]>;
 export function el<T extends Element>(tag: string, props?: Props<T>, children?: Children): Builder<T>;
 export function el<T extends Element>(tag: string, props: Props<T> = {}, children?: Children) {
-  return function build(parent: Element) {
-    const key = tag + (props.$key || getKey());
-    const match = parent.querySelector(`[data-key="${key}"]`);
-    const node = (match || document.createElement(tag)) as T;
-    node.setAttribute('data-key', key);
+  return function build(prev: Element) {
+    const node = (prev || document.createElement(tag)) as T;
     build['current'] = node;
     up(node, props, children);
     return node;

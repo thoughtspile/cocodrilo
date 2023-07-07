@@ -16,17 +16,15 @@ interface TodoProps {
 const Todo = (props: TodoProps) => {
   const item = el('li', {
     className: 'todo',
-    $key: props.item.title,
     on: {
       dblclick: () => item.current.classList.add('editing'),
     }
   }, [
-    el('div', { className: 'view', $key: 'view' }, [
+    el('div', { className: 'view' }, [
       el('input', {
         className: 'toggle',
         type: 'checkbox',
         checked: props.item.done,
-        $key: 'toggle',
         on: {
           change: (e) => props.onChange({ ...props.item, done: e.currentTarget.checked }),
         }
@@ -36,14 +34,12 @@ const Todo = (props: TodoProps) => {
       ]),
       el('button', {
         className: 'destroy',
-        $key: 'destroy',
         on: {
           click: () => props.remove()
         },
       }),
     ]),
     el('form', {
-      $key: 'form',
       on: {
         submit: (e) => {
           e.preventDefault();
@@ -54,7 +50,6 @@ const Todo = (props: TodoProps) => {
       }
     }, [
       el('input', {
-        $key: 'edit',
         className: 'edit',
         type: 'text',
         name: 'title',
@@ -78,16 +73,17 @@ const TodoApp = () => {
     todoStorage.save(data);
     const visible = data.filter(filter);
     up(counter.current, {}, [String(visible.length)]);
-    up(todoList.current, {}, visible.map(item => {
-      return Todo({ item, remove: () => removeItem(item), onChange: v => Object.assign(item, v) });
-    }));
+    up(todoList.current, {}, visible.map(item => [
+      Todo({ item, remove: () => removeItem(item), onChange: v => Object.assign(item, v) }),
+      item.title
+    ]));
   };
   const removeItem = (item: TodoItem) => {
     data = data.filter(d => d !== item);
     update();
   };
   const addItem = (item: TodoItem) => {
-    data.push(item);
+    data.unshift(item);
     update();
   };
   const toggleAll = () => {

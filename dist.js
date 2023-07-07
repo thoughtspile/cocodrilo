@@ -1,19 +1,22 @@
 (() => {
   // index.ts
-  var implicitKey = [0];
-  var getKey = () => implicitKey[0]++;
   function setChildren(target, childList) {
-    implicitKey.unshift(0);
     let first = null;
-    childList.forEach((c) => {
-      const child = typeof c === "function" ? c(target) : c;
-      if (!child)
-        return;
-      const node = child instanceof Node ? child : text(child);
-      target.appendChild(node);
-      !first && (first = node);
+    let implicitKey = 0;
+    const oldKeyed = target.keyed || {};
+    const newKeyed = target.keyed = {};
+    childList.forEach((raw) => {
+      const isKeyed = Array.isArray(raw);
+      const c = isKeyed ? raw[0] : raw;
+      const key = isKeyed ? raw[1] : implicitKey++;
+      const child = typeof c === "function" ? c(oldKeyed[key]) : c;
+      if (child) {
+        const node = child instanceof Node ? child : text(child);
+        newKeyed[key] = node;
+        target.appendChild(node);
+        first = first || node;
+      }
     });
-    implicitKey.shift();
     while (target.firstChild !== first)
       target.removeChild(target.firstChild);
   }
@@ -25,15 +28,11 @@
     });
   }
   function assign(node, props) {
-    const cache = node.props || (node.props = {});
     Object.entries(props).forEach(([key, newValue]) => {
-      if (cache[key] === newValue) {
-      } else if (key === "on") {
+      if (key === "on") {
         updateEvents(node, newValue);
       } else if (key === "style") {
         Object.assign(node[key], newValue);
-      } else if (key === "$key") {
-        node.setAttribute("data-key", newValue);
       } else if (key !== "list" && key !== "form" && key in node) {
         node[key] = newValue;
       } else if (typeof newValue === "string") {
@@ -41,14 +40,11 @@
       } else {
         node.removeAttribute(key);
       }
-      cache[key] = newValue;
     });
   }
   function el(tag, props = {}, children) {
-    return function build(parent) {
-      props.$key = props.$key || getKey();
-      const match = parent.querySelector(`${tag}[data-key="${props.$key}"]`);
-      const node = match || document.createElement(tag, { is: props.is });
+    return function build(prev) {
+      const node = prev || document.createElement(tag);
       build["current"] = node;
       up(node, props, children);
       return node;
@@ -72,17 +68,15 @@
   var Todo = (props) => {
     const item = el("li", {
       className: "todo",
-      $key: props.item.title,
       on: {
         dblclick: () => item.current.classList.add("editing")
       }
     }, [
-      el("div", { className: "view", $key: "view" }, [
+      el("div", { className: "view" }, [
         el("input", {
           className: "toggle",
           type: "checkbox",
           checked: props.item.done,
-          $key: "toggle",
           on: {
             change: (e) => props.onChange({ ...props.item, done: e.currentTarget.checked })
           }
@@ -92,14 +86,12 @@
         ]),
         el("button", {
           className: "destroy",
-          $key: "destroy",
           on: {
             click: () => props.remove()
           }
         })
       ]),
       el("form", {
-        $key: "form",
         on: {
           submit: (e) => {
             e.preventDefault();
@@ -110,7 +102,6 @@
         }
       }, [
         el("input", {
-          $key: "edit",
           className: "edit",
           type: "text",
           name: "title"
@@ -131,16 +122,17 @@
       todoStorage.save(data);
       const visible = data.filter(filter);
       up(counter.current, {}, [String(visible.length)]);
-      up(todoList.current, {}, visible.map((item) => {
-        return Todo({ item, remove: () => removeItem(item), onChange: (v) => Object.assign(item, v) });
-      }));
+      up(todoList.current, {}, visible.map((item) => [
+        Todo({ item, remove: () => removeItem(item), onChange: (v) => Object.assign(item, v) }),
+        item.title
+      ]));
     };
     const removeItem = (item) => {
       data = data.filter((d) => d !== item);
       update();
     };
     const addItem = (item) => {
-      data.push(item);
+      data.unshift(item);
       update();
     };
     const toggleAll = () => {
