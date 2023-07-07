@@ -31,8 +31,6 @@ function assign<T extends Element>(node: PatchedElement, props: Props<T>) {
       updateEvents(node, newValue as any);
     } else if (key === 'style') {
       Object.assign(node[key], newValue);
-    } else if (key === '$key') {
-      node.setAttribute('data-key', newValue as any);
     } else if (key !== "list" && key !== "form" && key in node) {
       node[key] = newValue;
     } else if (typeof newValue === 'string') {
@@ -44,16 +42,17 @@ function assign<T extends Element>(node: PatchedElement, props: Props<T>) {
 }
 
 export function el<K extends keyof HTMLElementTagNameMap>(
-  tagName: K, 
+  tag: K, 
   props?: Props<HTMLElementTagNameMap[K]>,
   children?: Children
 ): Builder<HTMLElementTagNameMap[K]>;
-export function el<T extends Element>(tagName: string, props?: Props<T>, children?: Children): Builder<T>;
+export function el<T extends Element>(tag: string, props?: Props<T>, children?: Children): Builder<T>;
 export function el<T extends Element>(tag: string, props: Props<T> = {}, children?: Children) {
   return function build(parent: Element) {
-    props.$key = props.$key || getKey();
-    const match = parent.querySelector(`${tag}[data-key="${props.$key}"]`);
-    const node = (match || document.createElement(tag, { is: props.is })) as T;
+    const key = tag + (props.$key || getKey());
+    const match = parent.querySelector(`[data-key="${key}"]`);
+    const node = (match || document.createElement(tag)) as T;
+    node.setAttribute('data-key', key);
     build['current'] = node;
     up(node, props, children);
     return node;

@@ -7,7 +7,7 @@ export type EventMap<Tag extends Element = Element> = {
 
 export type Children = (((parent: Element) => Node) | string | Falsy)[];
 
-export type Props<T extends Element> = ElementCreationOptions & Partial<T> & Record<string, unknown> & { 
+export type Props<T extends Element> = Partial<T> & Record<string, unknown> & { 
   on?: EventMap<T>;
   $key?: unknown;
   style?: Partial<CSSStyleDeclaration>;
