@@ -1,14 +1,14 @@
-import { Children, Builder, EventMap, Props, PatchedElement, Child } from "./types";
+import { Children, Builder, EventMap, Props, PatchedElement, Child, Component } from "./types";
 
 function setChildren(target: PatchedElement, childList: Children) {
   let first: Node | null = null;
   const oldKeyed = target.$k || {};
   const newKeyed = (target.$k = {});
-  childList.forEach((raw, implicitKey) => {
-    const isKeyed = raw instanceof Array;
-    let child: Child | Node = isKeyed ? raw[0] : raw;
-    const key = isKeyed ? raw[1] : implicitKey;
-    if (typeof child === 'function') child = child(oldKeyed[key]);
+  childList.forEach((child: Node | Child, key: string | number) => {
+    if (typeof child === 'function') {
+      key = child.key || key;
+      child = child(oldKeyed[key]);
+    }
     if (typeof child === 'string') child = text(child);
     if (!child) return;
     newKeyed[key] = child;
@@ -49,13 +49,25 @@ export function el<K extends keyof HTMLElementTagNameMap>(
   props?: Props<HTMLElementTagNameMap[K]>,
   children?: Children
 ): Builder<HTMLElementTagNameMap[K]>;
-export function el<T extends Element>(tag: string, props?: Props<T>, children?: Children): Builder<T>;
-export function el<T extends Element>(tag: string, props: Props<T> = {}, children?: Children) {
-  return function build(node: Element = document.createElement(tag)) {
+export function el<T extends Element, Props>(
+  tag: Component<T, Props>,
+  props?: Props,
+  children?: Children
+): Builder<T>;
+export function el<T extends Element>(
+  tag: string, 
+  props?: Props<T>, 
+  children?: Children
+): Builder<T>;
+export function el<T extends Element>(tag: any, props: Props<T> = {}, children?: Children) {
+  const isElement = typeof tag === 'string';
+  function build(node: Element = isElement ? document.createElement(tag) : tag(props, children)) {
     build['current'] = node;
-    up(node as T, props, children);
+    isElement && up(node as T, props, children);
     return node;
-  }
+  };
+  build.key = props.key;
+  return build as Builder<T>;
 }
 
 export function up<T extends Element>(node: T, props: Props<T> = {}, children?: Children): void {

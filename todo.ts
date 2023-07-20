@@ -73,10 +73,14 @@ const TodoApp = () => {
     todoStorage.save(data);
     const visible = data.filter(filter);
     up(counter.current, {}, [String(visible.length)]);
-    up(todoList.current, {}, visible.map(item => [
-      Todo({ item, remove: () => removeItem(item), onChange: v => Object.assign(item, v) }),
-      item.title
-    ]));
+    up(todoList.current, {}, visible.map(item =>
+      el(Todo, { 
+        item, 
+        remove: () => removeItem(item), 
+        onChange: v => Object.assign(item, v),
+        key: item.title
+      }),
+    ));
   };
   const removeItem = (item: TodoItem) => {
     data = data.filter(d => d !== item);

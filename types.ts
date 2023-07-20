@@ -5,8 +5,9 @@ export type EventMap<Tag extends Element = Element> = {
   [K in keyof HTMLElementEventMap]?: (this: Tag, ev: Event<K, Tag>) => any;
 }
 
-export type Child = ((parent: Element) => Node) | string | Falsy;
-export type Children = (Child | [Child, string])[];
+export type Child = Builder | string | Falsy;
+export type Children = Child[];
+export type Component<T extends Element, Props = {}> = (props: Props, children?: Children) => Builder<T>;
 
 export type Props<T extends Element> = Partial<T> & Record<string, unknown> & { 
   on?: EventMap<T>;
@@ -15,6 +16,7 @@ export type Props<T extends Element> = Partial<T> & Record<string, unknown> & {
 
 export interface Builder<T extends Element = Element> {
   (prev?: Element): T;
+  key?: string | number;
   current: T;
 }
 
