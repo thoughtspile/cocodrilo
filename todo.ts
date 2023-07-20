@@ -14,24 +14,23 @@ interface TodoProps {
   remove: () => void;
 }
 const Todo = (props: TodoProps) => {
-  const item = el('li', {
+  const toggle = el('input', {
+    className: 'toggle',
+    type: 'checkbox',
+    on: {
+      change: (e) => props.onChange({ ...props.item, done: e.currentTarget.checked }),
+    }
+  });
+  const label = el('label');
+  const root = el('li', {
     className: 'todo',
     on: {
-      dblclick: () => item.current.classList.add('editing'),
+      dblclick: () => root.current.classList.add('editing'),
     }
   }, [
     el('div', { className: 'view' }, [
-      el('input', {
-        className: 'toggle',
-        type: 'checkbox',
-        checked: props.item.done,
-        on: {
-          change: (e) => props.onChange({ ...props.item, done: e.currentTarget.checked }),
-        }
-      }),
-      el('label', {}, [
-        props.item.title
-      ]),
+      toggle,
+      label,
       el('button', {
         className: 'destroy',
         on: {
@@ -45,7 +44,7 @@ const Todo = (props: TodoProps) => {
           e.preventDefault();
           const title = new FormData(e.currentTarget).get('title') as string;
           props.onChange({ ...props.item, title });
-          item.current.classList.remove('editing');
+          root.current.classList.remove('editing');
         }
       }
     }, [
@@ -56,7 +55,12 @@ const Todo = (props: TodoProps) => {
       })
     ])
   ]);
-  return item;
+  return (nextProps: TodoProps) => {
+    props = nextProps;
+    up(toggle.current, { checked: props.item.done });
+    up(label.current, {}, [props.item.title]);
+    return root;
+  };
 }
 
 const filters = {

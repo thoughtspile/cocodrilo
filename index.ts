@@ -1,16 +1,17 @@
-import { Children, Builder, EventMap, Props, PatchedElement, Child, Component } from "./types";
+import { Children, Builder, EventMap, Props, PatchedElement, Child, Component, Sync } from "./types";
 
 function setChildren(target: PatchedElement, childList: Children) {
   let first: Node | null = null;
   const oldKeyed = target.$k || {};
   const newKeyed = (target.$k = {});
   childList.forEach((child: Node | Child, key: string | number) => {
+    if (typeof child === 'string') child = text(child);
     if (typeof child === 'function') {
       key = child.key || key;
       child = child(oldKeyed[key]);
     }
-    if (typeof child === 'string') child = text(child);
     if (!child) return;
+    if (!(child instanceof Node)) child = child.current;
     newKeyed[key] = child;
     target.appendChild(child);
     first = child;
@@ -59,20 +60,28 @@ export function el<T extends Element>(
   props?: Props<T>, 
   children?: Children
 ): Builder<T>;
-export function el<T extends Element>(tag: any, props: Props<T> = {}, children?: Children) {
-  const isElement = typeof tag === 'string';
-  function build(node: Element = isElement ? document.createElement(tag) : tag(props, children)) {
-    build['current'] = node;
-    isElement && up(node as T, props, children);
-    return node;
-  };
-  build.key = props.key;
-  return build as Builder<T>;
+export function el<T extends Element>(tag: string | Component<any>, props: Props<T> = {}, children?: Children) {
+  const init = typeof tag === 'string' ? domComponent(tag) : tag;
+  return (node = initComponent(init, props, children)) => node;
 }
 
-export function up<T extends Element>(node: T, props: Props<T> = {}, children?: Children): void {
+function domComponent(tag: string): Component<any, Props<any>> {
+  const node = document.createElement(tag);
+  return () => (props, children) => up(node, props, children);
+}
+
+function initComponent(init: Component<any, any>, props: any, children?: any): Builder<any> {
+  const sync = init(props, children);
+  const node = sync(props, children) as Builder<any>;
+  node.$s = (props, children) => node.current = sync(props, children);
+  node.key = props.key;
+  return node;
+}
+
+export function up<T extends Element>(node: T, props: Props<T> = {}, children?: Children): T {
   assign(node, props);
   children && setChildren(node, children);
+  return node;
 }
 
 export function text(text: string) {
