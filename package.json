@@ -1,7 +1,7 @@
 {
-  "name": "domchain",
-  "version": "0.1.0",
-  "description": "Chainable DOM API",
+  "name": "cocodrilo",
+  "version": "0.0.1",
+  "description": "The smallest UI framework ever",
   "main": "index.js",
   "scripts": {
     "build": "npx esbuild index.ts --outfile=dist/index.js",
