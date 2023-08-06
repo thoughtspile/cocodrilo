@@ -4,18 +4,24 @@ function setChildren(target: PatchedElement, childList: Children) {
   let first: Node | null = null;
   const oldKeyed = target.$k || {};
   const newKeyed = (target.$k = {});
-  childList.forEach((child: Node | Child, key: string | number) => {
-    if (typeof child === 'string') child = text(child);
-    if (typeof child === 'function') {
+  childList.map((child: Node | Child, key: string | number) => {
+    if (typeof child === 'string') {
+      child = document.createTextNode(child);
+    } else if (typeof child === 'function') {
+      // reuse previous DOM nodes
       key = child.key || key;
       child = child(oldKeyed[key]);
     }
+    child = child && child.current || child;
     if (!child) return;
-    if (!(child instanceof Node)) child = child.current;
+    // track first child node
+    first = first || child;
+    // track for updates
     newKeyed[key] = child;
+    // shifts child to proper position
     target.appendChild(child);
-    first = child;
   });
+  // remove obsolete children
   while (target.firstChild !== first) target.removeChild(target.firstChild);
 }
 
@@ -28,13 +34,15 @@ function updateEvents(node: PatchedElement, events: EventMap) {
   }
 }
 
-function assign<T extends Element>(node: PatchedElement, props: Props<T>) {
+export function up<T extends Element>(node: T, props: Props<T>): T {
   for (const key in props) {
     const newValue = props[key];
     if (key === "on") {
       updateEvents(node, newValue as any);
     } else if (key === 'style') {
       Object.assign(node[key], newValue);
+    } else if (key === 'children') {
+      setChildren(node, newValue as any);
     } else if (key !== "list" && key !== "form" && key in node) {
       node[key] = newValue;
     } else if (typeof newValue === 'string') {
@@ -43,47 +51,28 @@ function assign<T extends Element>(node: PatchedElement, props: Props<T>) {
       node.removeAttribute(key);
     }
   }
+  return node;
 }
 
-export function el<K extends keyof HTMLElementTagNameMap>(
+export function dom<K extends keyof HTMLElementTagNameMap>(
   tag: K, 
-  props?: Props<HTMLElementTagNameMap[K]>,
-  children?: Children
+  props: Props<HTMLElementTagNameMap[K]>
 ): Builder<HTMLElementTagNameMap[K]>;
-export function el<T extends Element, Props>(
-  tag: Component<T, Props>,
-  props?: Props,
-  children?: Children
-): Builder<T>;
-export function el<T extends Element>(
+export function dom<T extends Element>(
   tag: string, 
-  props?: Props<T>, 
-  children?: Children
+  props: Props<T>
 ): Builder<T>;
-export function el<T extends Element>(tag: string | Component<any>, props: Props<T> = {}, children?: Children) {
-  const init = typeof tag === 'string' ? domComponent(tag) : tag;
-  return (node = initComponent(init, props, children)) => node;
+export function dom<T extends Element>(tag: string, props: Props<T>): Builder<T> {
+  const builder = (node => up(node || document.createElement(tag), props)) as Builder<T>;
+  builder.key = props.key;
+  return builder;
 }
 
-function domComponent(tag: string): Component<any, Props<any>> {
-  const node = document.createElement(tag);
-  return () => (props, children) => up(node, props, children);
-}
-
-function initComponent(init: Component<any, any>, props: any, children?: any): Builder<any> {
-  const sync = init(props, children);
-  const node = sync(props, children) as Builder<any>;
-  node.$s = (props, children) => node.current = sync(props, children);
-  node.key = props.key;
-  return node;
-}
-
-export function up<T extends Element>(node: T, props: Props<T> = {}, children?: Children): T {
-  assign(node, props);
-  children && setChildren(node, children);
-  return node;
-}
-
-export function text(text: string) {
-  return document.createTextNode(text);
+export function cmp<T extends Element, Props>(init: Component<T, Props>, props: Props & { key?: string }): Builder<T> {
+  const builder = (node?: T) => {
+    const sync = init(props);
+    return node || sync(props);
+  };
+  builder.key = props.key;
+  return builder;
 }

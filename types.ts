@@ -7,14 +7,15 @@ export type EventMap<Tag extends Element = Element> = {
 
 export type Child = Builder<any> | string | Falsy;
 export type Children = Child[];
-export type Sync<T extends Element, Props> = (props: Props, children?: Children) => Builder<T>;
-export type Component<T extends Element, Props = {}> = (props: Props, children?: Children) => Sync<T, Props>;
+export type Sync<T extends Element, Props> = (props: Props) => Builder<T>;
+export type Component<T extends Element, Props = {}> = (props: Props) => Sync<T, Props>;
 
 export type Key = string | number;
 export type Props<T extends Element> = Partial<T> & Record<string, unknown> & { 
   key?: Key;
   on?: EventMap<T>;
   style?: Partial<CSSStyleDeclaration>;
+  children?: Children;
 };
 
 export interface Builder<T extends Element = Element> {
