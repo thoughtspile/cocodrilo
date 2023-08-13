@@ -5,7 +5,7 @@ type Event<
   Tag extends Element,
 > = HTMLElementEventMap[K] & { currentTarget: Tag };
 export type EventMap<Tag extends Element = Element> = {
-  [K in keyof HTMLElementEventMap]?: (this: Tag, ev: Event<K, Tag>) => any;
+  [K in keyof HTMLElementEventMap]?: ((this: Tag, ev: Event<K, Tag>) => any) | null | false;
 };
 
 export type Child = Builder<any> | string | Falsy;
@@ -16,7 +16,7 @@ export type Component<T extends Element, Props = {}> = (
 ) => Sync<T, Props>;
 
 export type Key = string | number;
-export type Props<T extends Element> = Omit<Partial<T>, "children"> &
+export type Props<T extends Element> = Omit<Partial<T>, "children" | 'style'> &
   Record<string, unknown> & {
     key?: Key;
     on?: EventMap<T>;

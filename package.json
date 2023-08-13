@@ -4,7 +4,9 @@
   "description": "The smallest UI framework ever",
   "main": "index.js",
   "scripts": {
-    "build": "npx esbuild index.ts --outfile=dist/index.js",
+    "test": "npx vitest",
+    "format": "npx prettier --write .",
+    "build": "npx esbuild index.ts --outfile=index.js",
     "size": "npx esbuild index.ts --bundle --minify | gzip -c | wc -c"
   },
   "author": "Vladimir Klepov v.klepov@gmail.com",

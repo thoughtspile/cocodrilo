@@ -91,11 +91,23 @@ describe("events", () => {
 describe("style", () => {
   it("sets style", () => {
     const div = up(document.createElement("div"), {
-      style: {},
+      style: {
+        color: 'red'
+      },
     });
+    expect(div.style.color).toBe('red');
   });
 
-  it("preserves existing style", () => {});
+  it("preserves existing style", () => {
+    const div = document.createElement("div");
+    div.style.fontFamily = 'sans-serif';
+    up(div, {
+      style: {
+        color: 'red'
+      },
+    });
+    expect(div.style.fontFamily).toBe('sans-serif');
+  });
 });
 
 describe("children", () => {
