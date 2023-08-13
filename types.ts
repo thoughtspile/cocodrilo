@@ -11,7 +11,7 @@ export type Sync<T extends Element, Props> = (props: Props) => Builder<T>;
 export type Component<T extends Element, Props = {}> = (props: Props) => Sync<T, Props>;
 
 export type Key = string | number;
-export type Props<T extends Element> = Partial<T> & Record<string, unknown> & { 
+export type Props<T extends Element> = Omit<Partial<T>, 'children'> & Record<string, unknown> & { 
   key?: Key;
   on?: EventMap<T>;
   style?: Partial<CSSStyleDeclaration>;

@@ -1,4 +1,4 @@
-import { domchain, el, text } from ".";
+import { up, dom } from ".";
 
 const TodoItem = (todo: string) => el('li').setChildren([text(todo)]);
 
