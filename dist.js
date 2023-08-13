@@ -4,7 +4,7 @@
     let first = null;
     let implicitKey = 0;
     const oldKeyed = target.keyed || {};
-    const newKeyed = target.keyed = {};
+    const newKeyed = (target.keyed = {});
     childList.forEach((raw) => {
       const isKeyed = Array.isArray(raw);
       const c = isKeyed ? raw[0] : raw;
@@ -17,8 +17,7 @@
         first = first || node;
       }
     });
-    while (target.firstChild !== first)
-      target.removeChild(target.firstChild);
+    while (target.firstChild !== first) target.removeChild(target.firstChild);
   }
   function updateEvents(node, events) {
     const cache = node.events || (node.events = {});
@@ -62,58 +61,67 @@
   var STORAGE_KEY = "todos-redom";
   var todoStorage = {
     fetch: () => JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"),
-    save: (todos) => {
-    }
+    save: (todos) => {},
   };
   var Todo = (props) => {
-    const item = el("li", {
-      className: "todo",
-      on: {
-        dblclick: () => item.current.classList.add("editing")
-      }
-    }, [
-      el("div", { className: "view" }, [
-        el("input", {
-          className: "toggle",
-          type: "checkbox",
-          checked: props.item.done,
-          on: {
-            change: (e) => props.onChange({ ...props.item, done: e.currentTarget.checked })
-          }
-        }),
-        el("label", {}, [
-          props.item.title
-        ]),
-        el("button", {
-          className: "destroy",
-          on: {
-            click: () => props.remove()
-          }
-        })
-      ]),
-      el("form", {
+    const item = el(
+      "li",
+      {
+        className: "todo",
         on: {
-          submit: (e) => {
-            e.preventDefault();
-            const title = new FormData(e.currentTarget).get("title");
-            props.onChange({ ...props.item, title });
-            item.current.classList.remove("editing");
-          }
-        }
-      }, [
-        el("input", {
-          className: "edit",
-          type: "text",
-          name: "title"
-        })
-      ])
-    ]);
+          dblclick: () => item.current.classList.add("editing"),
+        },
+      },
+      [
+        el("div", { className: "view" }, [
+          el("input", {
+            className: "toggle",
+            type: "checkbox",
+            checked: props.item.done,
+            on: {
+              change: (e) =>
+                props.onChange({
+                  ...props.item,
+                  done: e.currentTarget.checked,
+                }),
+            },
+          }),
+          el("label", {}, [props.item.title]),
+          el("button", {
+            className: "destroy",
+            on: {
+              click: () => props.remove(),
+            },
+          }),
+        ]),
+        el(
+          "form",
+          {
+            on: {
+              submit: (e) => {
+                e.preventDefault();
+                const title = new FormData(e.currentTarget).get("title");
+                props.onChange({ ...props.item, title });
+                item.current.classList.remove("editing");
+              },
+            },
+          },
+          [
+            el("input", {
+              className: "edit",
+              type: "text",
+              name: "title",
+            }),
+          ],
+        ),
+      ],
+    );
     return item;
   };
   var filters = {
     all: (e) => true,
     active: (e) => !e.done,
-    completed: (e) => e.done
+    completed: (e) => e.done,
   };
   var TodoApp = () => {
     let filter = filters.all;
@@ -122,10 +130,18 @@
       todoStorage.save(data);
       const visible = data.filter(filter);
       up(counter.current, {}, [String(visible.length)]);
-      up(todoList.current, {}, visible.map((item) => [
-        Todo({ item, remove: () => removeItem(item), onChange: (v) => Object.assign(item, v) }),
-        item.title
-      ]));
+      up(
+        todoList.current,
+        {},
+        visible.map((item) => [
+          Todo({
+            item,
+            remove: () => removeItem(item),
+            onChange: (v) => Object.assign(item, v),
+          }),
+          item.title,
+        ]),
+      );
     };
     const removeItem = (item) => {
       data = data.filter((d) => d !== item);
@@ -137,7 +153,7 @@
     };
     const toggleAll = () => {
       const allDone = data.every((d) => d.done);
-      data.forEach((d) => d.done = !allDone);
+      data.forEach((d) => (d.done = !allDone));
       update();
     };
     const clearCompleted = () => {
@@ -147,91 +163,108 @@
     const createInput = el("input", {
       className: "new-todo",
       type: "text",
-      placeholder: "What needs to be done?"
+      placeholder: "What needs to be done?",
     });
     const todoList = el("ul", { className: "todo-list" });
     const counter = el("strong", {}, ["0"]);
-    const Filter = (label, value) => el("li", {}, [
-      el("label", {}, [
-        el("input", {
-          type: "radio",
-          value,
-          name: "filter",
-          on: {
-            click: () => {
-              filter = filters[value];
-              update();
-            }
-          }
-        }),
-        label
-      ])
-    ]);
+    const Filter = (label, value) =>
+      el("li", {}, [
+        el("label", {}, [
+          el("input", {
+            type: "radio",
+            value,
+            name: "filter",
+            on: {
+              click: () => {
+                filter = filters[value];
+                update();
+              },
+            },
+          }),
+          label,
+        ]),
+      ]);
     return [
       el("section", { className: "todoapp" }, [
         el("header", { className: "header" }, [
           el("h1", { className: "heading" }, ["todos"]),
-          el("form", {
-            on: {
-              submit: (evt) => {
-                evt.preventDefault();
-                const item = { done: false, title: createInput.current.value };
-                createInput.current.value = "";
-                addItem(item);
-              }
-            }
-          }, [
-            createInput
-          ])
+          el(
+            "form",
+            {
+              on: {
+                submit: (evt) => {
+                  evt.preventDefault();
+                  const item = {
+                    done: false,
+                    title: createInput.current.value,
+                  };
+                  createInput.current.value = "";
+                  addItem(item);
+                },
+              },
+            },
+            [createInput],
+          ),
         ]),
         el("section", { className: "main" }, [
           el("input", {
             className: "toggle-all",
             type: "checkbox",
             on: {
-              click: toggleAll
-            }
+              click: toggleAll,
+            },
           }),
-          el("label", {
-            for: "toggle-all"
-          }, ["Mark all as complete"]),
-          todoList
+          el(
+            "label",
+            {
+              for: "toggle-all",
+            },
+            ["Mark all as complete"],
+          ),
+          todoList,
         ]),
         el("footer", { className: "footer" }, [
-          el("span", { className: "todo-count" }, [
-            counter,
-            " items left"
-          ]),
+          el("span", { className: "todo-count" }, [counter, " items left"]),
           el("ul", { className: "filters" }, [
             Filter("All", "all"),
             Filter("Active", "active"),
-            Filter("Completed", "completed")
+            Filter("Completed", "completed"),
           ]),
-          el("button", {
-            className: "clear-completed",
-            on: {
-              click: clearCompleted
-            }
-          }, [
-            "Clear Completed"
-          ])
-        ])
+          el(
+            "button",
+            {
+              className: "clear-completed",
+              on: {
+                click: clearCompleted,
+              },
+            },
+            ["Clear Completed"],
+          ),
+        ]),
       ]),
       el("footer", { className: "info" }, [
         el("p", {}, ["Double-click to edit a todo"]),
         el("p", {}, [
           "Written by ",
-          el("a", {
-            href: "https://www.mauroreisvieira.com/"
-          }, ["Mauro Reis Vieira"])
+          el(
+            "a",
+            {
+              href: "https://www.mauroreisvieira.com/",
+            },
+            ["Mauro Reis Vieira"],
+          ),
         ]),
         el("p", {}, [
           "Part of ",
-          el("a", {
-            href: "http://todomvc.com"
-          }, ["TodoMVC"])
-        ])
-      ])
+          el(
+            "a",
+            {
+              href: "http://todomvc.com",
+            },
+            ["TodoMVC"],
+          ),
+        ]),
+      ]),
     ];
   };
   up(document.body, {}, TodoApp());
